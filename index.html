@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合约计算器 - 专业的加密货币合约交易工具</title>
+    <meta name="description" content="专业的合约计算器，支持收益计算、强平价格计算、开仓均价计算和仓位计算">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .slide-in {
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* 隐藏数字输入框的增减按钮 */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        
+        /* 苹果风格的渐变背景 */
+        .apple-gradient {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        /* 玻璃态效果 */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        /* 输入框聚焦效果 */
+        input:focus {
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+        
+        /* 按钮悬停效果 */
+        button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        /* 分隔线 */
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+        }
+        
+        /* 平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        /* 导航栏激活状态 */
+        .nav-tab {
+            position: relative;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .nav-tab.active {
+            border-bottom-color: currentColor;
+            font-weight: 600;
+        }
+        
+        /* 计算器内容区域 */
+        .calculator-content {
+            display: none;
+        }
+        
+        .calculator-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        /* 公式显示区域 */
+        .formula-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .formula-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 0.75rem;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="apple-gradient min-h-screen">
+    <!-- 主容器 -->
+    <div class="container mx-auto px-6 py-12 max-w-6xl">
+        <!-- 页面标题 -->
+        <header class="text-center mb-12 fade-in">
+            <h1 class="text-5xl font-light text-gray-900 mb-3 tracking-tight">合约计算器</h1>
+            <p class="text-lg font-light text-gray-600">专业的加密货币合约交易计算工具</p>
+        </header>
+
+        <!-- 全局配置面板 -->
+        <div id="globalConfig" class="mb-12 fade-in">
+            <div class="glass-effect rounded-3xl shadow-xl p-8">
+                <h2 class="text-2xl font-light text-gray-900 mb-6 text-center">全局配置</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 交易方向 -->
+                    <div class="text-center">
+                        <label class="block text-sm font-medium text-gray-600 mb-3 uppercase tracking-wider">交易方向</label>
+                        <div class="flex items-center justify-center space-x-3">
+                            <button id="directionLong" class="px-8 py-3 rounded-full font-medium text-sm bg-green-500 text-white shadow-lg">
+                                做多
+                            </button>
+                            <button id="directionShort" class="px-8 py-3 rounded-full font-medium text-sm bg-white text-gray-700 border border-gray-200">
+                                做空
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Maker 手续费率 -->
+                    <div class="text-center">
+                        <label for="makerFee" class="block text-sm font-medium text-gray-600 mb-3 uppercase tracking-wider">Maker 手续费率 (%)</label>
+                        <input type="number" id="makerFee" step="0.0001" min="0" max="100" 
+                               class="w-full px-5 py-3 border-0 border-b-2 border-gray-200 bg-transparent text-center text-lg focus:outline-none focus:border-blue-500"
+                               value="0.02"
+                               placeholder="0.02">
+                        <p id="makerFeeWarning" class="text-xs text-red-500 mt-2 hidden">手续费率过高</p>
+                    </div>
+                    
+                    <!-- Taker 手续费率 -->
+                    <div class="text-center">
+                        <label for="takerFee" class="block text-sm font-medium text-gray-600 mb-3 uppercase tracking-wider">Taker 手续费率 (%)</label>
+                        <input type="number" id="takerFee" step="0.0001" min="0" max="100" 
+                               class="w-full px-5 py-3 border-0 border-b-2 border-gray-200 bg-transparent text-center text-lg focus:outline-none focus:border-blue-500"
+                               value="0.05"
+                               placeholder="0.05">
+                        <p id="takerFeeWarning" class="text-xs text-red-500 mt-2 hidden">手续费率过高</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 导航栏 -->
+        <div class="glass-effect rounded-3xl shadow-xl mb-8 overflow-hidden fade-in">
+            <div class="flex flex-wrap justify-center">
+                <div class="nav-tab active text-green-600" data-calculator="profit">
+                    <span class="text-lg">收益额计算</span>
+                </div>
+                <div class="nav-tab text-red-600" data-calculator="liquidation">
+                    <span class="text-lg">强平价格计算</span>
+                </div>
+                <div class="nav-tab text-blue-600" data-calculator="averagePrice">
+                    <span class="text-lg">开仓均价计算</span>
+                </div>
+                <div class="nav-tab text-purple-600" data-calculator="position">
+                    <span class="text-lg">仓位计算</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 计算器内容区域 -->
+        <div class="glass-effect rounded-3xl shadow-xl p-8 md:p-12 fade-in">
+            <!-- 收益额计算器 -->
+            <div id="profitCalculator" class="calculator-content active">
+                <h2 class="text-3xl font-light text-gray-900 mb-8 text-center">收益额计算</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="profitLeverage" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">杠杆倍数</label>
+                            <input type="number" id="profitLeverage" step="0.0001" min="1" max="125" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-green-500"
+                                   placeholder="1-125">
+                        </div>
+                        <div>
+                            <label for="profitOpenPrice" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">开仓价格 (USDT)</label>
+                            <input type="number" id="profitOpenPrice" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-green-500"
+                                   placeholder="0.0000">
+                        </div>
+                        <div>
+                            <label for="profitClosePrice" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">平仓价格 (USDT)</label>
+                            <input type="number" id="profitClosePrice" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-green-500"
+                                   placeholder="0.0000">
+                        </div>
+                        <div>
+                            <label for="profitQuantity" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">开仓数量</label>
+                            <input type="number" id="profitQuantity" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-green-500"
+                                   placeholder="0.0000">
+                        </div>
+                        <button id="calculateProfit" 
+                                class="w-full bg-green-500 text-white py-5 rounded-xl font-medium text-lg hover:bg-green-600 shadow-lg mt-8">
+                            计算收益
+                        </button>
+                        <div id="profitResult" class="hidden mt-8 pt-6 border-t-2 border-gray-200">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-base text-gray-600">收益额</span>
+                                    <span id="profitAmount" class="text-3xl font-light">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-base text-gray-600">收益率</span>
+                                    <span id="profitRate" class="text-2xl font-light">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">Maker手续费</span>
+                                    <span id="profitMakerFee" class="text-base font-light text-gray-700">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">Taker手续费</span>
+                                    <span id="profitTakerFee" class="text-base font-light text-gray-700">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="profitError" class="text-sm text-red-500 hidden mt-2"></p>
+                    </div>
+
+                    <!-- 计算公式 -->
+                    <div class="formula-box">
+                        <h3 class="text-xl font-semibold mb-4">计算公式</h3>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">做多收益：</div>
+                            <div class="font-mono text-sm">收益 = 数量 × (平仓价 - 开仓价) - 手续费</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">做空收益：</div>
+                            <div class="font-mono text-sm">收益 = 数量 × (开仓价 - 平仓价) - 手续费</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">手续费计算：</div>
+                            <div class="font-mono text-sm">Maker手续费 = 数量 × 开仓价 × Maker费率</div>
+                            <div class="font-mono text-sm mt-1">Taker手续费 = 数量 × 平仓价 × Taker费率</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 强平价格计算器 -->
+            <div id="liquidationCalculator" class="calculator-content">
+                <h2 class="text-3xl font-light text-gray-900 mb-8 text-center">强平价格计算</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="liqLeverage" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">杠杆倍数</label>
+                            <input type="number" id="liqLeverage" step="0.0001" min="1" max="125" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-red-500"
+                                   placeholder="1-125">
+                            <p id="leverageWarning" class="text-xs text-orange-500 mt-2 hidden">杠杆倍数超出常规范围</p>
+                        </div>
+                        <div>
+                            <label for="liqOpenPrice" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">开仓价格 (USDT)</label>
+                            <input type="number" id="liqOpenPrice" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-red-500"
+                                   placeholder="0.0000">
+                        </div>
+                        <div>
+                            <label for="liqQuantity" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">数量</label>
+                            <input type="number" id="liqQuantity" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-red-500"
+                                   placeholder="0.0000">
+                        </div>
+                        <div>
+                            <label for="liqInitialMargin" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">初始保证金 (USDT)</label>
+                            <input type="number" id="liqInitialMargin" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-red-500"
+                                   placeholder="留空则自动计算">
+                            <p class="text-xs text-gray-500 mt-2">留空时根据杠杆自动计算</p>
+                        </div>
+                        <div>
+                            <label for="liqAddMargin" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">增加保证金 (USDT)</label>
+                            <input type="number" id="liqAddMargin" step="0.0001" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-red-500"
+                                   placeholder="0.0000"
+                                   value="0">
+                        </div>
+                        <button id="calculateLiquidation" 
+                                class="w-full bg-red-500 text-white py-5 rounded-xl font-medium text-lg hover:bg-red-600 shadow-lg mt-8">
+                            计算强平价格
+                        </button>
+                        <div id="liquidationResult" class="hidden mt-8 pt-6 border-t-2 border-gray-200">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-base text-gray-600">强平价格</span>
+                                    <span id="liqPrice" class="text-3xl font-light text-red-600">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">初始保证金 (USDT)</span>
+                                    <span id="liqInitMargin" class="text-base font-light text-gray-700">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">总保证金 (USDT)</span>
+                                    <span id="liqTotalMargin" class="text-base font-light text-blue-600">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="liquidationError" class="text-sm text-red-500 hidden mt-2"></p>
+                    </div>
+
+                    <!-- 计算公式 -->
+                    <div class="formula-box">
+                        <h3 class="text-xl font-semibold mb-4">计算公式</h3>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">初始保证金：</div>
+                            <div class="font-mono text-sm">初始保证金 = 持仓价值 / 杠杆倍数</div>
+                            <div class="text-sm mt-1 opacity-80">（或手动输入初始保证金）</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">总保证金：</div>
+                            <div class="font-mono text-sm">总保证金 = 初始保证金 + 增加保证金</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">做多强平价：</div>
+                            <div class="font-mono text-sm">强平价 = 开仓价 - (总保证金 / 数量)</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">做空强平价：</div>
+                            <div class="font-mono text-sm">强平价 = 开仓价 + (总保证金 / 数量)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 开仓均价计算器 -->
+            <div id="averagePriceCalculator" class="calculator-content">
+                <h2 class="text-3xl font-light text-gray-900 mb-8 text-center">开仓均价计算</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="avgQuantity" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">数量</label>
+                                <input type="number" id="avgQuantity" step="0.0001" min="0" 
+                                       class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-blue-500"
+                                       placeholder="0.0000">
+                            </div>
+                            <div>
+                                <label for="avgPrice" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">价格</label>
+                                <input type="number" id="avgPrice" step="0.0001" min="0" 
+                                       class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-blue-500"
+                                       placeholder="0.0000">
+                            </div>
+                        </div>
+                        <button id="addPosition" 
+                                class="w-full bg-blue-500 text-white py-5 rounded-xl font-medium text-lg hover:bg-blue-600 shadow-lg">
+                            添加开仓记录
+                        </button>
+                        
+                        <!-- 导出按钮 -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="exportMarkdown" 
+                                    class="px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
+                                导出 Markdown
+                            </button>
+                            <button id="exportCSV" 
+                                    class="px-4 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-all">
+                                导出 CSV
+                            </button>
+                        </div>
+                        
+                        <!-- 开仓记录列表 -->
+                        <div id="positionList" class="space-y-3 max-h-80 overflow-y-auto bg-gray-50 rounded-xl p-4">
+                            <p class="text-sm text-gray-400 text-center py-8">暂无开仓记录</p>
+                        </div>
+                        
+                        <!-- 计算结果 -->
+                        <div id="averageResult" class="hidden mt-8 pt-6 border-t-2 border-gray-200">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-base text-gray-600">开仓均价</span>
+                                    <span id="avgResultPrice" class="text-3xl font-light text-blue-600">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">总持仓</span>
+                                    <span id="avgTotalPosition" class="text-base font-light">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">总成本</span>
+                                    <span id="avgTotalCost" class="text-base font-light">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="averageError" class="text-sm text-red-500 hidden mt-2"></p>
+                    </div>
+
+                    <!-- 计算公式 -->
+                    <div class="formula-box">
+                        <h3 class="text-xl font-semibold mb-4">计算公式</h3>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">加权平均价格：</div>
+                            <div class="font-mono text-sm">均价 = Σ(数量ᵢ × 价格ᵢ) / Σ(数量ᵢ)</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">含手续费成本：</div>
+                            <div class="font-mono text-sm">实际成本 = 价格 + (价格 × Maker费率)</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">总成本：</div>
+                            <div class="font-mono text-sm">总成本 = Σ(数量ᵢ × 实际成本ᵢ)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 仓位计算器 -->
+            <div id="positionCalculator" class="calculator-content">
+                <h2 class="text-3xl font-light text-gray-900 mb-8 text-center">仓位计算</h2>
+                <div class="max-w-2xl mx-auto">
+                    <div class="space-y-6">
+                        <div>
+                            <label for="posPlannedLoss" class="block text-sm font-medium text-gray-600 mb-2 uppercase tracking-wider">计划亏损金额 (R)</label>
+                            <input type="number" id="posPlannedLoss" step="0.01" min="0" 
+                                   class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-purple-500"
+                                   placeholder="1000">
+                            <p class="text-xs text-gray-500 mt-2">可承受的最大亏损额</p>
+                        </div>
+                        <div class="border-t-2 border-gray-200 pt-6">
+                            <p class="text-sm text-gray-600 mb-4 font-medium uppercase tracking-wider">止损设置（二选一）</p>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="posStopLossAmount" class="block text-sm font-medium text-gray-600 mb-2">止损幅度 (ΔP)</label>
+                                    <input type="number" id="posStopLossAmount" step="0.0001" min="0" 
+                                           class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-purple-500"
+                                           placeholder="1000">
+                                    <p class="text-xs text-gray-500 mt-2">价格波动金额（如1000 USDT）</p>
+                                </div>
+                                <div class="text-center text-sm text-gray-400 font-medium">或</div>
+                                <div>
+                                    <label for="posStopLossPercent" class="block text-sm font-medium text-gray-600 mb-2">止损百分比 (%)</label>
+                                    <input type="number" id="posStopLossPercent" step="0.01" min="0" max="100" 
+                                           class="w-full px-5 py-4 border-2 border-gray-200 rounded-xl bg-white text-lg focus:outline-none focus:border-purple-500"
+                                           placeholder="2.4">
+                                    <p class="text-xs text-gray-500 mt-2">止损百分比（如2.4%）</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="calculatePosition" 
+                                class="w-full bg-purple-500 text-white py-5 rounded-xl font-medium text-lg hover:bg-purple-600 shadow-lg mt-8">
+                            计算建议仓位
+                        </button>
+                        <div id="positionResult" class="hidden mt-8 pt-6 border-t-2 border-gray-200">
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-base text-gray-600">开仓数量</span>
+                                    <span id="posQuantity" class="text-3xl font-light text-purple-600">-</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">开仓价值 (USDT)</span>
+                                    <span id="posValue" class="text-base font-light text-gray-700">-</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="positionError" class="text-sm text-red-500 hidden mt-2"></p>
+                    </div>
+
+                    <!-- 计算公式 -->
+                    <div class="formula-box">
+                        <h3 class="text-xl font-semibold mb-4">计算公式</h3>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">通过止损幅度计算数量：</div>
+                            <div class="font-mono text-sm">开仓数量 = 计划亏损金额(R) / 止损幅度(ΔP)</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">止损幅度：</div>
+                            <div class="font-mono text-sm">止损幅度(ΔP) = |入场价格 - 止损价格|</div>
+                        </div>
+                        <div class="formula-item">
+                            <div class="font-medium mb-2">通过止损百分比计算价值：</div>
+                            <div class="font-mono text-sm">开仓价值 = 计划亏损金额(R) / 止损百分比</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 页脚 -->
+        <footer class="mt-16 pb-8 text-center">
+            <p class="text-sm text-gray-500">由 <a href="https://with.woa.com/" style="color: #8A2BE2;" target="_blank">with</a> 通过自然语言生成</p>
+        </footer>
+    </div>
+
+    <!-- 导出数据弹窗 -->
+    <div id="exportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-6">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col" onclick="event.stopPropagation()">
+            <!-- 弹窗头部 -->
+            <div class="flex items-center justify-between px-8 py-6 border-b border-gray-200">
+                <h3 class="text-2xl font-light text-gray-900">
+                    导出数据 - <span id="exportFormatTitle" class="text-blue-600">Markdown</span>
+                </h3>
+                <button id="closeExportModal" class="text-gray-400 hover:text-gray-600 text-3xl leading-none transition-colors">
+                    ×
+                </button>
+            </div>
+            
+            <!-- 弹窗内容 -->
+            <div class="flex-1 overflow-y-auto px-8 py-6">
+                <textarea id="exportDataContent" 
+                          readonly
+                          class="w-full h-full min-h-[400px] p-6 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-mono text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                          placeholder="导出的数据将显示在这里..."></textarea>
+            </div>
+            
+            <!-- 弹窗底部 -->
+            <div class="flex items-center justify-end gap-3 px-8 py-6 border-t border-gray-200">
+                <button id="copyExportBtn" 
+                        class="px-6 py-3 bg-blue-500 text-white rounded-full font-medium text-sm hover:bg-blue-600 shadow-lg transition-all">
+                    复制到剪贴板
+                </button>
+                <button onclick="document.getElementById('closeExportModal').click()" 
+                        class="px-6 py-3 bg-white border border-gray-300 text-gray-700 rounded-full font-medium text-sm hover:bg-gray-50 transition-all">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript 模块 -->
+    <script type="module" defer src="validator.js"></script>
+    <script type="module" defer src="config.js"></script>
+    <script type="module" defer src="profitCalculator.js"></script>
+    <script type="module" defer src="liquidationCalculator.js"></script>
+    <script type="module" defer src="positionCalculator.js"></script>
+    <script type="module" defer src="averagePriceCalculator.js"></script>
+    <script type="module" defer src="ui.js"></script>
+    <script type="module" defer src="main.js"></script>
+    
+    <!-- 导航栏切换脚本 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navTabs = document.querySelectorAll('.nav-tab');
+            const calculators = document.querySelectorAll('.calculator-content');
+            
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetCalculator = this.dataset.calculator;
+                    
+                    // 移除所有激活状态
+                    navTabs.forEach(t => t.classList.remove('active'));
+                    calculators.forEach(c => c.classList.remove('active'));
+                    
+                    // 添加当前激活状态
+                    this.classList.add('active');
+                    document.getElementById(targetCalculator + 'Calculator').classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
