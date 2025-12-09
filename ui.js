@@ -43,8 +43,8 @@ function updateDirectionUI() {
     const isDarkMode = document.body.classList.contains('dark-mode');
     
     if (config.isLong()) {
-        // 做多选中：绿色文字 + 绿色边框 + 阴影
-        longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-green-500 border-2 border-green-500 shadow-lg';
+        // 做多选中：绿色文字 + 绿色边框（扁平化，无阴影）
+        longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-green-500 border-2 border-green-500';
         
         // 做空未选中：红色文字 + 细边框
         if (isDarkMode) {
@@ -53,8 +53,8 @@ function updateDirectionUI() {
             shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-red-500 border border-gray-200';
         }
     } else {
-        // 做空选中：红色文字 + 红色边框 + 阴影
-        shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-red-500 border-2 border-red-500 shadow-lg';
+        // 做空选中：红色文字 + 红色边框（扁平化，无阴影）
+        shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-red-500 border-2 border-red-500';
         
         // 做多未选中：绿色文字 + 细边框
         if (isDarkMode) {
