@@ -23,6 +23,11 @@ function initDirectionToggle() {
         config.setDirection(config.Direction.SHORT);
         updateDirectionUI();
     });
+    
+    // 监听主题切换事件
+    window.addEventListener('themeChanged', () => {
+        updateDirectionUI();
+    });
 }
 
 /**
@@ -34,14 +39,29 @@ function updateDirectionUI() {
     
     if (!longBtn || !shortBtn) return;
     
+    // 检查是否为黑色模式
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    
     if (config.isLong()) {
-        // 做多样式
-        longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-green-500 text-white shadow-lg';
-        shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-white text-gray-700 border border-gray-200';
+        // 做多选中：绿色文字 + 绿色边框 + 阴影
+        longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-green-500 border-2 border-green-500 shadow-lg';
+        
+        // 做空未选中：红色文字 + 细边框
+        if (isDarkMode) {
+            shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-red-500 border border-gray-600';
+        } else {
+            shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-red-500 border border-gray-200';
+        }
     } else {
-        // 做空样式
-        longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-white text-gray-700 border border-gray-200';
-        shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-red-500 text-white shadow-lg';
+        // 做空选中：红色文字 + 红色边框 + 阴影
+        shortBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-red-500 border-2 border-red-500 shadow-lg';
+        
+        // 做多未选中：绿色文字 + 细边框
+        if (isDarkMode) {
+            longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-green-500 border border-gray-600';
+        } else {
+            longBtn.className = 'px-8 py-3 rounded-full font-medium text-sm transition-all bg-transparent text-green-500 border border-gray-200';
+        }
     }
 }
 

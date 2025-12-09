@@ -5,6 +5,7 @@ import { initProfitCalculator } from './profitCalculator.js';
 import { initLiquidationCalculator } from './liquidationCalculator.js';
 import { initPositionCalculator } from './positionCalculator.js';
 import { initAveragePriceCalculator } from './averagePriceCalculator.js';
+import { initThemeManager } from './themeManager.js';
 import * as config from './config.js';
 
 /**
@@ -14,6 +15,9 @@ function initApp() {
     console.log('Initializing Contract Calculator...');
     
     try {
+        // 初始化主题管理器（优先初始化，避免闪烁）
+        initThemeManager();
+        
         // 初始化全局配置
         console.log('Config:', config.getAllConfig());
         
